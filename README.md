@@ -1,0 +1,109 @@
+# FerrisKey SDK Workspace
+
+Rust workspace for the FerrisKey OpenAPI contract in [docs/openai.json](docs/openai.json). The repository ships two primary artifacts:
+
+- `crates/ferriskey-sdk`: the shared Rust SDK generated and validated from the FerrisKey contract
+- `bin/ferriskey-cli`: a descriptor-driven CLI that exercises the same SDK runtime path as library consumers
+
+The workspace uses `cucumber-rs` for acceptance coverage, crate-local tests for the inner TDD loop, and Stoplight Prism as the contract mock for end-to-end verification.
+
+## What Is Here
+
+- Contract normalization and generated operation metadata derived from `docs/openai.json`
+- Shared request encoding and response decoding for the entire SDK surface
+- A dynamic CLI command tree grouped by API tag and operation
+- Prism-backed SDK sweep coverage for all documented operations
+- Prism-backed CLI smoke coverage and BDD acceptance scenarios
+- Strict format, lint, test, and BDD verification through `just`
+
+## Prerequisites
+
+- Rust toolchain with nightly available for `cargo fmt` and clippy checks
+- Node.js and npm for Stoplight Prism
+- `just` for the workspace command surface
+
+## Setup
+
+```bash
+just setup
+just format
+just lint
+just test
+just bdd
+just test-all
+```
+
+`just setup` installs the Rust workspace tools and ensures `@stoplight/prism-cli` is available so the Prism-backed tests and examples can run locally.
+
+## Workspace Layout
+
+- `bin/ferriskey-cli`: CLI binary crate
+- `crates/ferriskey-sdk`: reusable SDK crate
+- `features/`: Gherkin acceptance scenarios executed by `cargo test -p ferriskey-sdk --test bdd`
+- `docs/openai.json`: authoritative FerrisKey OpenAPI contract
+- `target/prism/openai.prism.json`: normalized Prism-ready artifact generated from the contract
+
+## Common Commands
+
+```bash
+just format
+just lint
+just test
+just bdd
+just test-all
+just build
+```
+
+- `just test` runs the crate and integration test suites, including Prism-backed smoke tests.
+- `just bdd` runs the FerrisKey acceptance scenarios from `features/`.
+- `just test-all` runs both the TDD and BDD layers together.
+
+## CLI Usage
+
+Top-level commands are generated from API tags and operation descriptors. The CLI takes a required base URL, an optional bearer token, and emits structured JSON.
+
+```bash
+cargo run -p ferriskey-cli -- \
+	--base-url http://127.0.0.1:4010 \
+	auth get-openid-configuration \
+	--realm-name test
+```
+
+Example with a request body:
+
+```bash
+cargo run -p ferriskey-cli -- \
+	--base-url http://127.0.0.1:4010 \
+	--bearer-token example-token \
+	realm update-realm \
+	--name test \
+	--body '{"display_name":"example"}'
+```
+
+The `--body` argument accepts inline JSON or `@path/to/file.json`.
+
+## Prism Verification
+
+The acceptance and integration layers expect Prism to serve the normalized contract artifact. A direct local probe looks like this:
+
+```bash
+prism mock target/prism/openai.prism.json --host 127.0.0.1 --port 4010 --dynamic
+
+cargo run -p ferriskey-cli -- \
+	--base-url http://127.0.0.1:4010 \
+	auth get-openid-configuration \
+	--realm-name test
+```
+
+The SDK and CLI test suites start Prism automatically when needed, so the normal `just test`, `just bdd`, and `just test-all` flows already cover the contract-backed paths.
+
+## Testing Model
+
+- BDD via `features/*.feature` defines the acceptance contract.
+- Example-based tests cover named SDK and CLI behaviors.
+- `proptest` stays inside the ordinary `cargo test` loop for invariant-style checks.
+- Prism-backed tests validate the SDK and CLI against the normalized contract, not a handwritten mock.
+
+## License
+
+Apache-2.0

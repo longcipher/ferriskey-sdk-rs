@@ -1,0 +1,29 @@
+[package]
+name = "ferriskey-sdk"
+version.workspace = true
+edition.workspace = true
+description = "FerrisKey Rust SDK crate"
+
+[lints]
+workspace = true
+
+[dependencies]
+clap.workspace = true
+hpx = "2.3.1"
+percent-encoding = "2.3.2"
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+cucumber = { workspace = true }
+proptest = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
+[build-dependencies]
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[[test]]
+name = "bdd"
+harness = false

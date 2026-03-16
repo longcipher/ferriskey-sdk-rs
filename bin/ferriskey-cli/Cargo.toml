@@ -1,0 +1,13 @@
+[package]
+name = "ferriskey-cli"
+version.workspace = true
+edition.workspace = true
+description = "FerrisKey command-line client"
+
+[dependencies]
+eyre.workspace = true
+ferriskey-sdk = { path = "../../crates/ferriskey-sdk" }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
+[lints]
+workspace = true

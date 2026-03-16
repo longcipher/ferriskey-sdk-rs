@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 1ce8890732a86b5e7c59f8afff60e31d400d7f0104458b80c986e8d1c52be6b3 # shrinks to realm_name = "_", alias = "a", client_id = "~"
+cc 4b803256f6a73a400095e7be55dd967230764fd0fdeb4e4fde131ae53babda07 # shrinks to realm_name = "A", alias = "-a", client_id = "a"
