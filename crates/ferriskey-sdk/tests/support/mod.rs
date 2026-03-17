@@ -739,7 +739,7 @@ async fn wait_for_prism_ready(prism: &PrismServer) -> TestResult<()> {
 
         match client.get(&probe_url).send().await {
             Ok(response) if response.status().is_success() => return Ok(()),
-            Ok(_) | Err(_) => std::thread::sleep(PRISM_RETRY_DELAY),
+            Ok(_) | Err(_) => tokio::time::sleep(PRISM_RETRY_DELAY).await,
         }
     }
 }
