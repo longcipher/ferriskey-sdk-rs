@@ -165,32 +165,53 @@ pub(crate) async fn launch_prism() -> TestResult<PrismServer> {
     let manifest_dir = manifest_dir();
     let normalized_contract_path = ensure_normalized_contract(&manifest_dir)?;
     let log_path = prism_log_path(&manifest_dir);
-    let port = prism_port()?;
-    let base_url = format!("http://{PRISM_HOST}:{port}");
-    let log_file = OpenOptions::new().create(true).truncate(true).write(true).open(&log_path)?;
-    let stderr = log_file.try_clone()?;
-    let child = Command::new(prism_bin())
-        .arg("mock")
-        .arg(&normalized_contract_path)
-        .arg("--host")
-        .arg(PRISM_HOST)
-        .arg("--port")
-        .arg(port.to_string())
-        .arg("--dynamic")
-        .stdin(Stdio::null())
-        .stdout(Stdio::from(log_file))
-        .stderr(Stdio::from(stderr))
-        .spawn()?;
-    let prism = PrismServer {
-        child: Arc::new(Mutex::new(Some(child))),
-        base_url,
-        log_path,
-        probe_path: PRISM_PROBE_PATH.to_string(),
-    };
 
-    wait_for_prism_ready(&prism).await?;
+    // Retry loop to handle port race conditions when multiple tests run concurrently
+    let max_retries = 5;
+    let mut last_error = None;
 
-    Ok(prism)
+    for attempt in 1..=max_retries {
+        let port = prism_port()?;
+        let base_url = format!("http://{PRISM_HOST}:{port}");
+        let log_file =
+            OpenOptions::new().create(true).truncate(true).write(true).open(&log_path)?;
+        let stderr = log_file.try_clone()?;
+        let child = Command::new(prism_bin())
+            .arg("mock")
+            .arg(&normalized_contract_path)
+            .arg("--host")
+            .arg(PRISM_HOST)
+            .arg("--port")
+            .arg(port.to_string())
+            .arg("--dynamic")
+            .stdin(Stdio::null())
+            .stdout(Stdio::from(log_file))
+            .stderr(Stdio::from(stderr))
+            .spawn()?;
+        let prism = PrismServer {
+            child: Arc::new(Mutex::new(Some(child))),
+            base_url,
+            log_path: log_path.clone(),
+            probe_path: PRISM_PROBE_PATH.to_string(),
+        };
+
+        match wait_for_prism_ready(&prism).await {
+            Ok(()) => return Ok(prism),
+            Err(error) => {
+                // Kill the failed prism instance before retrying
+                drop(prism);
+
+                if attempt < max_retries {
+                    // Exponential backoff: 100ms, 200ms, 400ms, 800ms
+                    let delay = Duration::from_millis(100 * (1_u64 << (attempt - 1)));
+                    tokio::time::sleep(delay).await;
+                }
+                last_error = Some(error);
+            }
+        }
+    }
+
+    Err(last_error.unwrap_or_else(|| other_error("Failed to start Prism after all retries")))
 }
 
 #[allow(dead_code)]
