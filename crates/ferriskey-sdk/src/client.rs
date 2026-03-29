@@ -24,17 +24,16 @@
 //! The SDK accepts any `Transport` (which is a blanket impl over
 //! `tower::Service<SdkRequest>`), enabling middleware composition:
 //!
-//! ```ignore
-//! use tower::ServiceBuilder;
+//! ```no_run
+//! use ferriskey_sdk::{AuthStrategy, FerriskeySdk, HpxTransport, SdkConfig};
 //!
-//! let transport = ServiceBuilder::new()
-//!     .retry(ExponentialBackoff::default())
-//!     .timeout(Duration::from_secs(30))
-//!     .service(HpxTransport::new(client));
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! let config = SdkConfig::new("https://api.example.com", AuthStrategy::None);
+//! let transport = HpxTransport::default();
 //!
-//! let sdk = FerriskeySdk::builder(config)
-//!     .transport(transport)
-//!     .build();
+//! let sdk = FerriskeySdk::builder(config).transport(transport).build();
+//! # Ok(())
+//! # }
 //! ```
 
 use std::{collections::BTreeMap, future::Future, marker::PhantomData, pin::Pin};
@@ -72,10 +71,12 @@ pub struct Configured<T>(PhantomData<T>);
 ///
 /// Use [`OperationInput::builder()`] for a fluent API:
 ///
-/// ```ignore
+/// ```
+/// use ferriskey_sdk::OperationInput;
+///
 /// let input = OperationInput::builder()
 ///     .path_param("id", "123")
-///     .query_param("filter", vec!["active"])
+///     .query_param("filter", vec!["active".to_string()])
 ///     .header("x-request-id", "abc")
 ///     .body(br#"{"name": "test"}"#)
 ///     .build();
@@ -274,10 +275,14 @@ impl<T: Transport + Clone> TagClient<'_, T> {
 ///
 /// Use [`FerriskeySdk::builder()`] for a fluent, type-safe construction:
 ///
-/// ```ignore
-/// let sdk = FerriskeySdk::builder(config)
-///     .transport(HpxTransport::new(client))
-///     .build();
+/// ```no_run
+/// use ferriskey_sdk::{AuthStrategy, FerriskeySdk, HpxTransport, SdkConfig};
+///
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// let config = SdkConfig::new("https://api.example.com", AuthStrategy::None);
+/// let sdk = FerriskeySdk::builder(config).transport(HpxTransport::default()).build();
+/// # Ok(())
+/// # }
 /// ```
 #[derive(Clone, Debug)]
 pub struct FerriskeySdk<T: Transport + Clone> {
@@ -478,8 +483,14 @@ pub trait SdkExt: Sized {
 
     /// Create an SDK with a fluent one-liner.
     ///
-    /// ```ignore
-    /// let sdk = FerriskeySdk::with_transport(config, HpxTransport::new(client));
+    /// ```no_run
+    /// use ferriskey_sdk::{AuthStrategy, FerriskeySdk, HpxTransport, SdkConfig, SdkExt};
+    ///
+    /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let config = SdkConfig::new("https://api.example.com", AuthStrategy::None);
+    /// let sdk = FerriskeySdk::with_transport(config, HpxTransport::default());
+    /// # Ok(())
+    /// # }
     /// ```
     fn with_transport(
         config: SdkConfig,

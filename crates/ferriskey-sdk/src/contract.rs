@@ -51,6 +51,8 @@ pub struct ParameterDescriptorSeed {
     pub name: String,
     /// Whether the parameter is required.
     pub required: bool,
+    /// Parameter description from the OpenAPI document.
+    pub description: Option<String>,
 }
 
 /// Request-body descriptor seed before rendering the generated metadata module.
@@ -104,6 +106,10 @@ pub struct OperationDescriptorSeed {
     pub responses: Vec<ResponseDescriptorSeed>,
     /// Primary API tag.
     pub tag: String,
+    /// Short summary from the OpenAPI document.
+    pub summary: Option<String>,
+    /// Detailed description from the OpenAPI document.
+    pub description: Option<String>,
 }
 
 /// Normalized contract registry used by code generation and verification tests.
@@ -207,6 +213,10 @@ pub fn build_registry(document: &Value) -> Result<ContractRegistry, ContractErro
                 .find(|response| response.status == primary_success_status)
                 .and_then(|response| response.schema_name.clone());
             let requires_auth = operation_has_authorization(operation_object)?;
+            let summary =
+                operation_object.get("summary").and_then(Value::as_str).map(ToOwned::to_owned);
+            let description =
+                operation_object.get("description").and_then(Value::as_str).map(ToOwned::to_owned);
 
             operations.push(OperationDescriptorSeed {
                 has_request_body: request_body.is_some(),
@@ -220,6 +230,8 @@ pub fn build_registry(document: &Value) -> Result<ContractRegistry, ContractErro
                 requires_auth,
                 responses,
                 tag,
+                summary,
+                description,
             });
         }
     }
@@ -281,7 +293,7 @@ pub fn render_generated_module(registry: &ContractRegistry) -> String {
         .join("\n");
 
     format!(
-        "/// Generated parameter location metadata.\n#[derive(Clone, Copy, Debug, Eq, PartialEq)]\npub enum ParameterLocation {{\n    /// Header-bound parameter.\n    Header,\n    /// Path-bound parameter.\n    Path,\n    /// Query-bound parameter.\n    Query,\n}}\n\n/// Generated parameter descriptor metadata.\n#[derive(Clone, Copy, Debug, Eq, PartialEq)]\npub struct GeneratedParameterDescriptor {{\n    /// Parameter location in the HTTP request.\n    pub location: ParameterLocation,\n    /// Parameter name from the contract.\n    pub name: &'static str,\n    /// Whether the parameter is required by the contract.\n    pub required: bool,\n}}\n\n/// Generated request-body descriptor metadata.\n#[derive(Clone, Copy, Debug, Eq, PartialEq)]\npub struct GeneratedRequestBodyDescriptor {{\n    /// Preferred request content type.\n    pub content_type: Option<&'static str>,\n    /// Whether the request body is nullable.\n    pub nullable: bool,\n    /// Whether the request body is required.\n    pub required: bool,\n    /// Referenced schema name when present.\n    pub schema_name: Option<&'static str>,\n}}\n\n/// Generated response descriptor metadata.\n#[derive(Clone, Copy, Debug, Eq, PartialEq)]\npub struct GeneratedResponseDescriptor {{\n    /// Preferred response content type.\n    pub content_type: Option<&'static str>,\n    /// Whether the response represents an error status.\n    pub is_error: bool,\n    /// Referenced schema name when present.\n    pub schema_name: Option<&'static str>,\n    /// HTTP status code documented for the response.\n    pub status: u16,\n}}\n\n/// Generated operation descriptor metadata.\n#[derive(Clone, Copy, Debug, Eq, PartialEq)]\npub struct GeneratedOperationDescriptor {{\n    /// Unique operation identifier.\n    pub operation_id: &'static str,\n    /// HTTP method.\n    pub method: &'static str,\n    /// Path template from the contract.\n    pub path: &'static str,\n    /// Primary API tag.\n    pub tag: &'static str,\n    /// Whether the operation accepts a request body.\n    pub has_request_body: bool,\n    /// Schema name for the primary success response when present.\n    pub primary_response_schema: Option<&'static str>,\n    /// Primary success status code.\n    pub primary_success_status: u16,\n    /// Contract parameter descriptors.\n    pub parameters: &'static [GeneratedParameterDescriptor],\n    /// Contract request-body descriptor.\n    pub request_body: Option<GeneratedRequestBodyDescriptor>,\n    /// Whether the operation requires authorization.\n    pub requires_auth: bool,\n    /// Documented response descriptors.\n    pub responses: &'static [GeneratedResponseDescriptor],\n}}\n\n/// Number of documented paths in the normalized contract.\npub const PATH_COUNT: usize = {};\n/// Number of documented operations in the normalized contract.\npub const OPERATION_COUNT: usize = {};\n/// Number of documented schemas in the normalized contract.\npub const SCHEMA_COUNT: usize = {};\n/// Ordered tag names derived from the normalized contract.\npub const TAG_NAMES: &[&str] = &[\n{}\n];\n/// Generated operation descriptors derived from the normalized contract.\npub const OPERATION_DESCRIPTORS: &[GeneratedOperationDescriptor] = &[\n{}\n];\n\n/// Generated schema aliases derived from the normalized contract.\npub mod models {{\n    /// Ordered schema names derived from the normalized contract.\n    pub const SCHEMA_NAMES: &[&str] = &[\n{}\n    ];\n\n{}\n}}\n\n/// Generated tag groupings derived from the normalized contract.\npub mod tags {{\n{}\n}}\n",
+        "/// Generated parameter location metadata.\n#[derive(Clone, Copy, Debug, Eq, PartialEq)]\npub enum ParameterLocation {{\n    /// Header-bound parameter.\n    Header,\n    /// Path-bound parameter.\n    Path,\n    /// Query-bound parameter.\n    Query,\n}}\n\n/// Generated parameter descriptor metadata.\n#[derive(Clone, Copy, Debug, Eq, PartialEq)]\npub struct GeneratedParameterDescriptor {{\n    /// Parameter location in the HTTP request.\n    pub location: ParameterLocation,\n    /// Parameter name from the contract.\n    pub name: &'static str,\n    /// Whether the parameter is required by the contract.\n    pub required: bool,\n    /// Parameter description from the contract.\n    pub description: Option<&'static str>,\n}}\n\n/// Generated request-body descriptor metadata.\n#[derive(Clone, Copy, Debug, Eq, PartialEq)]\npub struct GeneratedRequestBodyDescriptor {{\n    /// Preferred request content type.\n    pub content_type: Option<&'static str>,\n    /// Whether the request body is nullable.\n    pub nullable: bool,\n    /// Whether the request body is required.\n    pub required: bool,\n    /// Referenced schema name when present.\n    pub schema_name: Option<&'static str>,\n}}\n\n/// Generated response descriptor metadata.\n#[derive(Clone, Copy, Debug, Eq, PartialEq)]\npub struct GeneratedResponseDescriptor {{\n    /// Preferred response content type.\n    pub content_type: Option<&'static str>,\n    /// Whether the response represents an error status.\n    pub is_error: bool,\n    /// Referenced schema name when present.\n    pub schema_name: Option<&'static str>,\n    /// HTTP status code documented for the response.\n    pub status: u16,\n}}\n\n/// Generated operation descriptor metadata.\n#[derive(Clone, Copy, Debug, Eq, PartialEq)]\npub struct GeneratedOperationDescriptor {{\n    /// Unique operation identifier.\n    pub operation_id: &'static str,\n    /// HTTP method.\n    pub method: &'static str,\n    /// Path template from the contract.\n    pub path: &'static str,\n    /// Primary API tag.\n    pub tag: &'static str,\n    /// Whether the operation accepts a request body.\n    pub has_request_body: bool,\n    /// Short summary from the contract.\n    pub summary: Option<&'static str>,\n    /// Detailed description from the contract.\n    pub description: Option<&'static str>,\n    /// Schema name for the primary success response when present.\n    pub primary_response_schema: Option<&'static str>,\n    /// Primary success status code.\n    pub primary_success_status: u16,\n    /// Contract parameter descriptors.\n    pub parameters: &'static [GeneratedParameterDescriptor],\n    /// Contract request-body descriptor.\n    pub request_body: Option<GeneratedRequestBodyDescriptor>,\n    /// Whether the operation requires authorization.\n    pub requires_auth: bool,\n    /// Documented response descriptors.\n    pub responses: &'static [GeneratedResponseDescriptor],\n}}\n\n/// Number of documented paths in the normalized contract.\npub const PATH_COUNT: usize = {};\n/// Number of documented operations in the normalized contract.\npub const OPERATION_COUNT: usize = {};\n/// Number of documented schemas in the normalized contract.\npub const SCHEMA_COUNT: usize = {};\n/// Ordered tag names derived from the normalized contract.\npub const TAG_NAMES: &[&str] = &[\n{}\n];\n/// Generated operation descriptors derived from the normalized contract.\npub const OPERATION_DESCRIPTORS: &[GeneratedOperationDescriptor] = &[\n{}\n];\n\n/// Generated schema aliases derived from the normalized contract.\npub mod models {{\n    /// Ordered schema names derived from the normalized contract.\n    pub const SCHEMA_NAMES: &[&str] = &[\n{}\n    ];\n\n{}\n}}\n\n/// Generated tag groupings derived from the normalized contract.\npub mod tags {{\n{}\n}}\n",
         registry.path_count,
         registry.operation_count,
         registry.schema_count,
@@ -295,12 +307,14 @@ pub fn render_generated_module(registry: &ContractRegistry) -> String {
 
 fn render_operation_descriptor(operation: &OperationDescriptorSeed) -> String {
     format!(
-        "    GeneratedOperationDescriptor {{ operation_id: {:?}, method: {:?}, path: {:?}, tag: {:?}, has_request_body: {}, primary_response_schema: {}, primary_success_status: {}, parameters: &[{}], request_body: {}, requires_auth: {}, responses: &[{}] }}",
+        "    GeneratedOperationDescriptor {{ operation_id: {:?}, method: {:?}, path: {:?}, tag: {:?}, has_request_body: {}, summary: {}, description: {}, primary_response_schema: {}, primary_success_status: {}, parameters: &[{}], request_body: {}, requires_auth: {}, responses: &[{}] }}",
         operation.operation_id,
         operation.method,
         operation.path,
         operation.tag,
         operation.has_request_body,
+        render_option_str(operation.summary.as_deref()),
+        render_option_str(operation.description.as_deref()),
         render_option_str(operation.primary_response_schema.as_deref()),
         operation.primary_success_status,
         render_parameter_descriptors(&operation.parameters),
@@ -315,10 +329,11 @@ fn render_parameter_descriptors(parameters: &[ParameterDescriptorSeed]) -> Strin
         .iter()
         .map(|parameter| {
             format!(
-                "GeneratedParameterDescriptor {{ location: ParameterLocation::{}, name: {:?}, required: {} }}",
+                "GeneratedParameterDescriptor {{ location: ParameterLocation::{}, name: {:?}, required: {}, description: {} }}",
                 render_parameter_location(parameter.location),
                 parameter.name,
                 parameter.required,
+                render_option_str(parameter.description.as_deref()),
             )
         })
         .collect::<Vec<_>>()
@@ -407,9 +422,12 @@ fn collect_parameter_descriptors(
                 _ => parameter_object.get("required").and_then(Value::as_bool).unwrap_or(false),
             };
 
+            let description =
+                parameter_object.get("description").and_then(Value::as_str).map(ToOwned::to_owned);
+
             parameters.insert(
                 (location, name.clone()),
-                ParameterDescriptorSeed { location, name, required },
+                ParameterDescriptorSeed { location, name, required, description },
             );
         }
     }

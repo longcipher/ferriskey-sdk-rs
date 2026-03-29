@@ -18,40 +18,41 @@
 //!
 //! ## Quick Start
 //!
-//! ```ignore
+//! ```no_run
 //! use ferriskey_sdk::prelude::*;
 //!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! // Configure the SDK
 //! let config = SdkConfig::builder("https://api.ferriskey.com")
 //!     .auth(AuthStrategy::Bearer("your-token".into()))
 //!     .build();
 //!
 //! // Create SDK with transport
-//! let sdk = FerriskeySdk::builder(config)
-//!     .transport(HpxTransport::default())
-//!     .build();
+//! let sdk = FerriskeySdk::builder(config).transport(HpxTransport::default()).build();
 //!
 //! // Execute operations
-//! let input = OperationInput::builder()
-//!     .path_param("realm", "master")
-//!     .build();
+//! let input = OperationInput::builder().path_param("realm", "master").build();
 //!
 //! let response = sdk.execute_operation("getRealm", input).await?;
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! ## Middleware Composition
 //!
-//! ```ignore
-//! use tower::ServiceBuilder;
-//! use std::time::Duration;
+//! ```no_run
+//! use ferriskey_sdk::{AuthStrategy, FerriskeySdk, HpxTransport, SdkConfig};
 //!
-//! let transport = ServiceBuilder::new()
-//!     .timeout(Duration::from_secs(30))
-//!     .service(HpxTransport::new(client));
-//!
-//! let sdk = FerriskeySdk::builder(config)
-//!     .transport(transport)
+//! # fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! let config = SdkConfig::builder("https://api.ferriskey.com")
+//!     .auth(AuthStrategy::Bearer("your-token".into()))
 //!     .build();
+//!
+//! let transport = HpxTransport::default();
+//!
+//! let sdk = FerriskeySdk::builder(config).transport(transport).build();
+//! # Ok(())
+//! # }
 //! ```
 
 pub mod cli;

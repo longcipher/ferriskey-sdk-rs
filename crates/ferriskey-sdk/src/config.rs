@@ -8,7 +8,11 @@
 //!
 //! ## Example
 //!
-//! ```ignore
+//! ```
+//! use std::time::Duration;
+//!
+//! use ferriskey_sdk::{AuthStrategy, SdkConfig};
+//!
 //! let config = SdkConfig::builder("https://api.example.com")
 //!     .auth(AuthStrategy::Bearer("token".into()))
 //!     .timeout(Duration::from_secs(30))

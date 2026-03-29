@@ -9,8 +9,8 @@ use std::{
 };
 
 use ferriskey_sdk::{
-    AuthStrategy, FerriskeySdk, OperationInput, SdkConfig, SdkRequest, SdkResponse,
-    TransportError, client::TagClient, generated,
+    AuthStrategy, FerriskeySdk, OperationInput, SdkConfig, SdkRequest, SdkResponse, TransportError,
+    client::TagClient, generated,
 };
 use proptest::prelude::*;
 use tower::Service;

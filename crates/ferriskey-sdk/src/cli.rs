@@ -11,7 +11,7 @@
 //! Custom CLI commands can be added via extension traits without modifying
 //! the core CLI infrastructure.
 
-use std::{collections::BTreeMap, ffi::OsString, fs};
+use std::{collections::BTreeMap, ffi::OsString, fs, path::PathBuf};
 
 use clap::{Arg, ArgAction, ArgMatches, Command};
 use serde_json::{Value, json};
@@ -20,8 +20,61 @@ use tower::Service;
 use crate::{
     AuthStrategy, DecodedResponse, FerriskeySdk, OperationInput, SdkConfig, SdkError, SdkRequest,
     Transport,
-    generated::{self, GeneratedOperationDescriptor, ParameterLocation},
+    generated::{
+        self, GeneratedOperationDescriptor, GeneratedParameterDescriptor, ParameterLocation,
+    },
 };
+
+/// Configuration file for persistent CLI authentication.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
+pub struct CliCredentials {
+    /// Base URL for the FerrisKey API.
+    pub base_url: Option<String>,
+    /// Bearer token for authenticated operations.
+    pub bearer_token: Option<String>,
+}
+
+impl CliCredentials {
+    /// Path to the credentials file.
+    fn config_dir() -> Option<PathBuf> {
+        dirs::home_dir().map(|home| home.join(".ferriskey-cli"))
+    }
+
+    /// Path to the credentials file.
+    fn config_path() -> Option<PathBuf> {
+        Self::config_dir().map(|dir| dir.join("config.toml"))
+    }
+
+    /// Load credentials from disk.
+    pub fn load() -> Self {
+        let Some(path) = Self::config_path() else {
+            return Self::default();
+        };
+
+        fs::read_to_string(path)
+            .ok()
+            .and_then(|content| toml::from_str(&content).ok())
+            .unwrap_or_default()
+    }
+
+    /// Save credentials to disk.
+    pub fn save(&self) -> Result<(), std::io::Error> {
+        let Some(dir) = Self::config_dir() else {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "Could not determine home directory",
+            ));
+        };
+
+        fs::create_dir_all(&dir)?;
+
+        let path = dir.join("config.toml");
+        let content = toml::to_string_pretty(self)
+            .map_err(|e| std::io::Error::other(format!("TOML serialization error: {e}")))?;
+
+        fs::write(path, content)
+    }
+}
 
 /// Errors raised while parsing or executing CLI requests.
 #[derive(Debug, thiserror::Error)]
@@ -156,6 +209,18 @@ where
 
     let decoded = operation.execute_decoded(invocation.input.clone()).await?;
 
+    // Save credentials after successful authentication
+    if invocation.operation_id == "authenticate" &&
+        let Some(response_body) = decoded.json_body() &&
+        let Some(access_token) = response_body.get("access_token").and_then(|v| v.as_str())
+    {
+        let credentials = CliCredentials {
+            base_url: Some(invocation.config.base_url.clone()),
+            bearer_token: Some(access_token.to_string()),
+        };
+        let _ = credentials.save();
+    }
+
     render_output(invocation.operation_id, &decoded, invocation.config.output_format)
 }
 
@@ -165,16 +230,15 @@ fn build_command() -> Command {
         .arg(
             Arg::new("base-url")
                 .long("base-url")
-                .required(true)
                 .value_name("URL")
-                .help("Base URL for the FerrisKey API"),
+                .help("Base URL for the FerrisKey API (or saved from 'auth' command)"),
         )
         .arg(
             Arg::new("bearer-token")
                 .long("bearer-token")
                 .global(true)
                 .value_name("TOKEN")
-                .help("Optional bearer token for secured operations"),
+                .help("Bearer token for secured operations (or saved from 'auth' command)"),
         )
         .arg(
             Arg::new("output")
@@ -184,6 +248,40 @@ fn build_command() -> Command {
                 .value_parser(["json", "pretty"])
                 .value_name("FORMAT")
                 .help("Structured output mode"),
+        )
+        .subcommand(
+            Command::new("login")
+                .about("Authenticate with FerrisKey and save credentials to ~/.ferriskey-cli/config.toml")
+                .arg(
+                    Arg::new("base-url")
+                        .long("base-url")
+                        .required(true)
+                        .value_name("URL")
+                        .help("Base URL for the FerrisKey API"),
+                )
+                .arg(
+                    Arg::new("username")
+                        .long("username")
+                        .short('u')
+                        .required(true)
+                        .value_name("USERNAME")
+                        .help("Username for authentication"),
+                )
+                .arg(
+                    Arg::new("password")
+                        .long("password")
+                        .short('p')
+                        .required(true)
+                        .value_name("PASSWORD")
+                        .help("Password for authentication"),
+                )
+                .arg(
+                    Arg::new("realm-name")
+                        .long("realm-name")
+                        .value_name("REALM")
+                        .default_value("master")
+                        .help("Realm name for authentication"),
+                ),
         );
 
     for tag in generated::TAG_NAMES {
@@ -210,7 +308,7 @@ fn operation_command(descriptor: &'static GeneratedOperationDescriptor) -> Comma
             .long(long_name)
             .value_name(parameter.name)
             .required(parameter.required)
-            .help(parameter_help(parameter.location));
+            .help(parameter_help(parameter));
 
         if parameter.location == ParameterLocation::Query {
             arg = arg.action(ArgAction::Append);
@@ -236,9 +334,30 @@ fn operation_command(descriptor: &'static GeneratedOperationDescriptor) -> Comma
 }
 
 fn parse_matches(matches: &ArgMatches) -> Result<CliInvocation, CliError> {
+    // Handle auth subcommand
+    if let Some(auth_matches) = matches.subcommand_matches("login") {
+        return handle_auth_command(auth_matches);
+    }
+
+    // Load credentials from config file
+    let credentials = CliCredentials::load();
+
+    let base_url =
+        matches.get_one::<String>("base-url").cloned().or(credentials.base_url).ok_or_else(
+            || {
+                clap::Error::raw(
+                    clap::error::ErrorKind::MissingRequiredArgument,
+                    "missing required argument --base-url (or run 'auth' command first)",
+                )
+            },
+        )?;
+
+    let bearer_token =
+        matches.get_one::<String>("bearer-token").cloned().or(credentials.bearer_token);
+
     let config = CliConfig {
-        base_url: required_string(matches, "base-url")?,
-        bearer_token: matches.get_one::<String>("bearer-token").cloned(),
+        base_url,
+        bearer_token,
         output_format: OutputFormat::from_str(&required_string(matches, "output")?),
     };
 
@@ -260,6 +379,42 @@ fn parse_matches(matches: &ArgMatches) -> Result<CliInvocation, CliError> {
     let input = parse_operation_input(descriptor, operation_matches)?;
 
     Ok(CliInvocation { config, operation_id: descriptor.operation_id, input })
+}
+
+/// Handle the auth subcommand to authenticate and save credentials.
+fn handle_auth_command(matches: &ArgMatches) -> Result<CliInvocation, CliError> {
+    let base_url = required_string(matches, "base-url")?;
+    let username = required_string(matches, "username")?;
+    let password = required_string(matches, "password")?;
+    let realm_name =
+        matches.get_one::<String>("realm-name").cloned().unwrap_or_else(|| "master".to_string());
+
+    // Create the authenticate request body
+    let auth_body = json!({
+        "username": username,
+        "password": password,
+    });
+
+    // Build the operation input for authenticate
+    let mut path_params = BTreeMap::new();
+    path_params.insert("realm_name".to_string(), realm_name);
+
+    let input = OperationInput {
+        body: Some(auth_body.to_string().into_bytes()),
+        headers: BTreeMap::new(),
+        path_params,
+        query_params: BTreeMap::new(),
+    };
+
+    let config = CliConfig {
+        base_url,
+        bearer_token: None,
+        output_format: OutputFormat::from_str(
+            matches.get_one::<String>("output").map_or("json", |s| s.as_str()),
+        ),
+    };
+
+    Ok(CliInvocation { config, operation_id: "authenticate", input })
 }
 
 fn parse_operation_input(
@@ -347,11 +502,15 @@ fn required_string(matches: &ArgMatches, name: &str) -> Result<String, CliError>
     })
 }
 
-const fn parameter_help(location: ParameterLocation) -> &'static str {
-    match location {
-        ParameterLocation::Header => "Header parameter",
-        ParameterLocation::Path => "Path parameter",
-        ParameterLocation::Query => "Query parameter",
+fn parameter_help(parameter: &GeneratedParameterDescriptor) -> String {
+    if let Some(description) = parameter.description {
+        description.to_string()
+    } else {
+        match parameter.location {
+            ParameterLocation::Header => format!("Header parameter: {}", parameter.name),
+            ParameterLocation::Path => format!("Path parameter: {}", parameter.name),
+            ParameterLocation::Query => format!("Query parameter: {}", parameter.name),
+        }
     }
 }
 

@@ -82,6 +82,42 @@ cargo run -p ferriskey-cli -- \
 
 The `--body` argument accepts inline JSON or `@path/to/file.json`.
 
+## Authentication
+
+The CLI supports one-time authentication that saves credentials to `~/.ferriskey-cli/config.toml`. Once authenticated, subsequent commands automatically use the saved credentials without needing to specify `--base-url` or `--bearer-token`.
+
+### Login
+
+Authenticate with a FerrisKey server and save credentials:
+
+```bash
+cargo run -p ferriskey-cli -- login \
+	--base-url http://127.0.0.1:8080 \
+	--username admin \
+	--password secret \
+	--realm-name master
+```
+
+The `--realm-name` parameter is optional and defaults to `master`.
+
+### Using Saved Credentials
+
+After logging in, you can run commands without specifying credentials:
+
+```bash
+# Credentials are loaded automatically from ~/.ferriskey-cli/config.toml
+cargo run -p ferriskey-cli -- realm get-realms --realm-name master
+cargo run -p ferriskey-cli -- user get-users --realm-name master
+```
+
+You can still override saved credentials by providing `--base-url` or `--bearer-token` explicitly:
+
+```bash
+cargo run -p ferriskey-cli -- \
+	--base-url http://different-server:8080 \
+	realm get-realms --realm-name master
+```
+
 ## Prism Verification
 
 The acceptance and integration layers expect Prism to serve the normalized contract artifact. A direct local probe looks like this:

@@ -43,7 +43,9 @@ impl SdkRequest {
     ///
     /// # Examples
     ///
-    /// ```ignore
+    /// ```
+    /// use ferriskey_sdk::SdkRequest;
+    ///
     /// let request = SdkRequest::builder("GET", "/api/users")
     ///     .header("accept", "application/json")
     ///     .auth_required(true)
@@ -176,14 +178,17 @@ pub struct SdkResponse {
 ///
 /// ## Example: Composing Middleware
 ///
-/// ```ignore
+/// ```no_run
+/// use std::time::Duration;
+///
+/// use ferriskey_sdk::HpxTransport;
 /// use tower::ServiceBuilder;
 ///
-/// let transport = ServiceBuilder::new()
-///     .retry(ExponentialBackoff::default())
-///     .timeout(Duration::from_secs(30))
-///     .rate_limit(100, Duration::from_secs(60))
-///     .service(HpxTransport::new(client));
+/// # fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// let transport =
+///     ServiceBuilder::new().timeout(Duration::from_secs(30)).service(HpxTransport::default());
+/// # Ok(())
+/// # }
 /// ```
 pub trait Transport:
     Service<SdkRequest, Response = SdkResponse, Error = TransportError> + Send + Sync
