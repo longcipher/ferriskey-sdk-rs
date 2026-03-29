@@ -14,6 +14,49 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/email-templates/variables/{email_type}": {
+      "get": {
+        "tags": [
+          "email-template-variables"
+        ],
+        "summary": "Get template variables",
+        "description": "Returns the available variables for a given email type.",
+        "operationId": "get_variables",
+        "parameters": [
+          {
+            "name": "email_type",
+            "in": "path",
+            "description": "Email type (reset_password, magic_link, email_verification)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Variables retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetTemplateVariablesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid email type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/realms": {
       "post": {
         "tags": [
@@ -2703,6 +2746,498 @@
         }
       }
     },
+    "/realms/{realm_name}/email-templates": {
+      "get": {
+        "tags": [
+          "email-template"
+        ],
+        "summary": "Fetch all email templates",
+        "description": "Retrieves all email templates for the specified realm.",
+        "operationId": "fetch_templates",
+        "parameters": [
+          {
+            "name": "realm_name",
+            "in": "path",
+            "description": "Name of the realm",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Email templates retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetEmailTemplatesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "email-template"
+        ],
+        "summary": "Create email template",
+        "description": "Creates a new email template for the specified realm.",
+        "operationId": "create_template",
+        "parameters": [
+          {
+            "name": "realm_name",
+            "in": "path",
+            "description": "Name of the realm",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEmailTemplateValidator"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Email template created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateEmailTemplateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/realms/{realm_name}/email-templates/{template_id}": {
+      "get": {
+        "tags": [
+          "email-template"
+        ],
+        "summary": "Get email template",
+        "description": "Retrieves a single email template by ID.",
+        "operationId": "get_template",
+        "parameters": [
+          {
+            "name": "realm_name",
+            "in": "path",
+            "description": "Name of the realm",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "template_id",
+            "in": "path",
+            "description": "Email template ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Email template retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetEmailTemplateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Email template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "email-template"
+        ],
+        "summary": "Update email template",
+        "description": "Updates an existing email template.",
+        "operationId": "update_template",
+        "parameters": [
+          {
+            "name": "realm_name",
+            "in": "path",
+            "description": "Name of the realm",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "template_id",
+            "in": "path",
+            "description": "Email template ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEmailTemplateValidator"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Email template updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateEmailTemplateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Email template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "email-template"
+        ],
+        "summary": "Delete email template",
+        "description": "Deletes an email template.",
+        "operationId": "delete_template",
+        "parameters": [
+          {
+            "name": "realm_name",
+            "in": "path",
+            "description": "Name of the realm",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "template_id",
+            "in": "path",
+            "description": "Email template ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Email template deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteEmailTemplateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Email template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/realms/{realm_name}/email-templates/{template_id}/activate": {
+      "patch": {
+        "tags": [
+          "email-template"
+        ],
+        "summary": "Activate email template",
+        "description": "Activates an email template, deactivating any other active template of the same type in this realm.",
+        "operationId": "activate_template",
+        "parameters": [
+          {
+            "name": "realm_name",
+            "in": "path",
+            "description": "Name of the realm",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "template_id",
+            "in": "path",
+            "description": "Email template ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Email template activated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivateEmailTemplateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Email template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/realms/{realm_name}/federation/providers": {
       "get": {
         "tags": [
@@ -3864,6 +4399,152 @@
         }
       }
     },
+    "/realms/{realm_name}/login-actions/passkey-authenticate": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Authenticate using a passkey",
+        "description": "Complete passkey authentication by submitting the browser's assertion response. On success, returns a login URL with an authorization code.",
+        "operationId": "passkey_authenticate",
+        "parameters": [
+          {
+            "name": "realm_name",
+            "in": "path",
+            "description": "Name of the realm",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyPublicKeyCredential"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Passkey authentication successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyAuthenticateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid session cookie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/realms/{realm_name}/login-actions/passkey-request-options": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Request passkey authentication challenge",
+        "description": "Initiates a passkey authentication flow. If username is provided, returns a challenge scoped to that user's passkeys. If omitted, returns a discoverable challenge allowing the browser to propose available passkeys.",
+        "operationId": "passkey_request_options",
+        "parameters": [
+          {
+            "name": "realm_name",
+            "in": "path",
+            "description": "Name of the realm",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyRequestOptionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Passkey request options generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyPublicKeyCredentialRequestOptionsJSON"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid session cookie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/realms/{realm_name}/login-actions/reset-password": {
       "post": {
         "tags": [
@@ -4551,6 +5232,858 @@
           },
           "403": {
             "description": "Identity not authorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/realms/{realm_name}/organizations": {
+      "get": {
+        "tags": [
+          "organization"
+        ],
+        "summary": "List organizations in a realm",
+        "operationId": "list_organizations",
+        "parameters": [
+          {
+            "name": "realm_name",
+            "in": "path",
+            "description": "Realm name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organizations retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Organization"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "organization"
+        ],
+        "summary": "Create a new organization",
+        "operationId": "create_organization",
+        "parameters": [
+          {
+            "name": "realm_name",
+            "in": "path",
+            "description": "Realm name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrganizationValidator"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Organization created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/realms/{realm_name}/organizations/{organization_id}": {
+      "get": {
+        "tags": [
+          "organization"
+        ],
+        "summary": "Get organization details",
+        "operationId": "get_organization",
+        "parameters": [
+          {
+            "name": "realm_name",
+            "in": "path",
+            "description": "Realm name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "path",
+            "description": "Organization ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organization retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "organization"
+        ],
+        "summary": "Update organization details",
+        "operationId": "update_organization",
+        "parameters": [
+          {
+            "name": "realm_name",
+            "in": "path",
+            "description": "Realm name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "path",
+            "description": "Organization ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOrganizationValidator"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Organization updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "organization"
+        ],
+        "summary": "Delete an organization",
+        "operationId": "delete_organization",
+        "parameters": [
+          {
+            "name": "realm_name",
+            "in": "path",
+            "description": "Realm name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "path",
+            "description": "Organization ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Organization deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/realms/{realm_name}/organizations/{organization_id}/attributes": {
+      "get": {
+        "tags": [
+          "organization"
+        ],
+        "summary": "List organization attributes",
+        "operationId": "list_attributes",
+        "parameters": [
+          {
+            "name": "realm_name",
+            "in": "path",
+            "description": "Realm name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "path",
+            "description": "Organization ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Attributes retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrganizationAttribute"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/realms/{realm_name}/organizations/{organization_id}/attributes/{key}": {
+      "put": {
+        "tags": [
+          "organization"
+        ],
+        "summary": "Create or update an organization attribute",
+        "operationId": "upsert_attribute",
+        "parameters": [
+          {
+            "name": "realm_name",
+            "in": "path",
+            "description": "Realm name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "path",
+            "description": "Organization ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "description": "Attribute key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertAttributeValidator"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Attribute upserted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationAttribute"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "organization"
+        ],
+        "summary": "Delete an organization attribute",
+        "operationId": "delete_attribute",
+        "parameters": [
+          {
+            "name": "realm_name",
+            "in": "path",
+            "description": "Realm name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "path",
+            "description": "Organization ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "description": "Attribute key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Attribute deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization or attribute not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/realms/{realm_name}/password-policy": {
+      "get": {
+        "tags": [
+          "realm"
+        ],
+        "summary": "Get password policy for a realm",
+        "description": "Retrieves the password policy for the specified realm.",
+        "operationId": "get_password_policy",
+        "parameters": [
+          {
+            "name": "realm_name",
+            "in": "path",
+            "description": "Realm name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Password policy retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasswordPolicy"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Realm not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "realm"
+        ],
+        "summary": "Update password policy for a realm",
+        "description": "Updates the password policy for the specified realm.",
+        "operationId": "update_password_policy",
+        "parameters": [
+          {
+            "name": "realm_name",
+            "in": "path",
+            "description": "Realm name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePasswordPolicyValidator"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Password policy updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasswordPolicy"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Realm not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -7214,6 +8747,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWebhookValidator"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Webhook updated successfully",
@@ -7342,6 +8885,17 @@
   },
   "components": {
     "schemas": {
+      "ActivateEmailTemplateResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/EmailTemplate"
+          }
+        }
+      },
       "ActorType": {
         "type": "string",
         "enum": [
@@ -8081,6 +9635,34 @@
           }
         }
       },
+      "CreateEmailTemplateResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/EmailTemplate"
+          }
+        }
+      },
+      "CreateEmailTemplateValidator": {
+        "type": "object",
+        "required": [
+          "name",
+          "email_type",
+          "structure"
+        ],
+        "properties": {
+          "email_type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "structure": {}
+        }
+      },
       "CreateIdentityProviderValidator": {
         "type": "object",
         "properties": {
@@ -8123,6 +9705,42 @@
           },
           "trust_email": {
             "type": "boolean"
+          }
+        }
+      },
+      "CreateOrganizationValidator": {
+        "type": "object",
+        "required": [
+          "name",
+          "alias"
+        ],
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "domain": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "redirect_url": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -8438,6 +10056,17 @@
           }
         }
       },
+      "DeleteEmailTemplateResponse": {
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
       "DeleteIdentityProviderResponse": {
         "type": "object",
         "required": [
@@ -8543,6 +10172,59 @@
             "type": "string"
           }
         }
+      },
+      "EmailTemplate": {
+        "type": "object",
+        "required": [
+          "id",
+          "realm_id",
+          "name",
+          "email_type",
+          "structure",
+          "mjml",
+          "is_active",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "email_type": {
+            "$ref": "#/components/schemas/EmailType"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "mjml": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "realm_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "structure": {},
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "EmailType": {
+        "type": "string",
+        "enum": [
+          "reset_password",
+          "magic_link",
+          "email_verification"
+        ]
       },
       "EventStatus": {
         "type": "string",
@@ -8698,6 +10380,31 @@
           }
         }
       },
+      "GetEmailTemplateResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/EmailTemplate"
+          }
+        }
+      },
+      "GetEmailTemplatesResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmailTemplate"
+            }
+          }
+        }
+      },
       "GetFlowResponse": {
         "type": "object",
         "required": [
@@ -8816,6 +10523,20 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/FlowStats"
+          }
+        }
+      },
+      "GetTemplateVariablesResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TemplateVariable"
+            }
           }
         }
       },
@@ -9114,6 +10835,96 @@
           }
         }
       },
+      "Organization": {
+        "type": "object",
+        "description": "Organization domain entity\n\n`name` is the primary human-readable label shown in admin or end-user surfaces.\n`alias` is the stable URL-safe identifier used for lookups and routing within a realm.\nThe first organizations release does not persist a separate `display_name`, so callers\nshould rely on `name` as the display label.",
+        "required": [
+          "id",
+          "realm_id",
+          "name",
+          "alias",
+          "enabled",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "domain": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "id": {
+            "$ref": "#/components/schemas/OrganizationId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "realm_id": {
+            "$ref": "#/components/schemas/RealmId"
+          },
+          "redirect_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OrganizationAttribute": {
+        "type": "object",
+        "required": [
+          "id",
+          "organization_id",
+          "key",
+          "value",
+          "created_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "key": {
+            "type": "string"
+          },
+          "organization_id": {
+            "$ref": "#/components/schemas/OrganizationId"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "OrganizationId": {
+        "type": "string",
+        "format": "uuid",
+        "description": "Unique identifier for an Organization"
+      },
       "OtpVerifyRequest": {
         "type": "object",
         "required": [
@@ -9130,6 +10941,95 @@
           },
           "secret": {
             "type": "string"
+          }
+        }
+      },
+      "PasskeyAuthenticateResponse": {
+        "type": "object",
+        "required": [
+          "login_url",
+          "status"
+        ],
+        "properties": {
+          "login_url": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "PasskeyPublicKeyCredential": {
+        "type": "object",
+        "description": "PublicKeyCredential assertion response for passkey authentication. See https://w3c.github.io/webauthn/#dictdef-publickeycredentialjson"
+      },
+      "PasskeyPublicKeyCredentialRequestOptionsJSON": {
+        "type": "object",
+        "description": "PublicKeyCredentialRequestOptionsJSON for passkey authentication. See https://w3c.github.io/webauthn/#dictdef-publickeycredentialrequestoptionsjson"
+      },
+      "PasskeyRequestOptionsRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "PasswordPolicy": {
+        "type": "object",
+        "required": [
+          "id",
+          "realm_id",
+          "min_length",
+          "require_uppercase",
+          "require_lowercase",
+          "require_number",
+          "require_special",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "max_age_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "min_length": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "realm_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "require_lowercase": {
+            "type": "boolean"
+          },
+          "require_number": {
+            "type": "boolean"
+          },
+          "require_special": {
+            "type": "boolean"
+          },
+          "require_uppercase": {
+            "type": "boolean"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -9160,7 +11060,9 @@
           "view_webhooks",
           "manage_client_scopes",
           "query_client_scopes",
-          "view_client_scopes"
+          "view_client_scopes",
+          "manage_email_templates",
+          "view_email_templates"
         ]
       },
       "ProtocolMapper": {
@@ -9323,7 +11225,8 @@
           "remember_me_enabled",
           "identity_providers",
           "magic_link_enabled",
-          "magic_link_ttl"
+          "magic_link_ttl",
+          "passkey_enabled"
         ],
         "properties": {
           "forgot_password_enabled": {
@@ -9343,6 +11246,9 @@
             "format": "int32",
             "minimum": 0
           },
+          "passkey_enabled": {
+            "type": "boolean"
+          },
           "remember_me_enabled": {
             "type": "boolean"
           },
@@ -9361,6 +11267,7 @@
           "remember_me_enabled",
           "magic_link_enabled",
           "magic_link_ttl",
+          "passkey_enabled",
           "compass_enabled",
           "access_token_lifetime",
           "refresh_token_lifetime",
@@ -9400,6 +11307,9 @@
             "type": "integer",
             "format": "int32",
             "minimum": 0
+          },
+          "passkey_enabled": {
+            "type": "boolean"
           },
           "realm_id": {
             "$ref": "#/components/schemas/RealmId"
@@ -9490,7 +11400,8 @@
         "enum": [
           "configure_otp",
           "verify_email",
-          "update_password"
+          "update_password",
+          "configure_passkey"
         ]
       },
       "ResetPasswordRequest": {
@@ -9900,6 +11811,21 @@
           }
         }
       },
+      "TemplateVariable": {
+        "type": "object",
+        "required": [
+          "name",
+          "description"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
       "TestConnectionResponse": {
         "type": "object",
         "required": [
@@ -10166,6 +12092,30 @@
           }
         }
       },
+      "UpdateEmailTemplateResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/EmailTemplate"
+          }
+        }
+      },
+      "UpdateEmailTemplateValidator": {
+        "type": "object",
+        "required": [
+          "name",
+          "structure"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "structure": {}
+        }
+      },
       "UpdateIdentityProviderResponse": {
         "type": "object",
         "required": [
@@ -10224,6 +12174,90 @@
             ]
           },
           "trust_email": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        }
+      },
+      "UpdateOrganizationValidator": {
+        "type": "object",
+        "properties": {
+          "alias": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "domain": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "enabled": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "redirect_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "UpdatePasswordPolicyValidator": {
+        "type": "object",
+        "properties": {
+          "max_age_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "min_length": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "require_lowercase": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "require_number": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "require_special": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "require_uppercase": {
             "type": [
               "boolean",
               "null"
@@ -10411,6 +12445,12 @@
             "format": "int32",
             "minimum": 0
           },
+          "passkey_enabled": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
           "refresh_token_lifetime": {
             "type": [
               "integer",
@@ -10576,6 +12616,52 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/Webhook"
+          }
+        }
+      },
+      "UpdateWebhookValidator": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subscribers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WebhookTrigger"
+            }
+          }
+        }
+      },
+      "UpsertAttributeValidator": {
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "properties": {
+          "value": {
+            "type": "string"
           }
         }
       },

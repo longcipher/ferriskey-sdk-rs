@@ -25,10 +25,10 @@ fn normalized_contract_preserves_operation_counts() {
     let normalized_registry = contract::build_registry(&normalized_document)
         .expect("normalized contract artifact should produce a registry");
 
-    assert_eq!(artifacts.registry.path_count, 72);
-    assert_eq!(artifacts.registry.operation_count, 107);
-    assert_eq!(artifacts.registry.schema_count, 154);
-    assert_eq!(artifacts.registry.tags.len(), 12);
+    assert_eq!(artifacts.registry.path_count, 83);
+    assert_eq!(artifacts.registry.operation_count, 126);
+    assert_eq!(artifacts.registry.schema_count, 179);
+    assert_eq!(artifacts.registry.tags.len(), 15);
 
     assert_eq!(generated::PATH_COUNT, artifacts.registry.path_count);
     assert_eq!(generated::OPERATION_COUNT, artifacts.registry.operation_count);

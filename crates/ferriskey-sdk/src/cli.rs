@@ -1,12 +1,25 @@
 //! Descriptor-driven CLI helpers shared by the FerrisKey binary and tests.
+//!
+//! ## Design Philosophy
+//!
+//! The CLI module provides a bridge between command-line arguments and the
+//! typed SDK interface. It uses clap for argument parsing and converts
+//! the results into `OperationInput` for SDK execution.
+//!
+//! ## Extension Point
+//!
+//! Custom CLI commands can be added via extension traits without modifying
+//! the core CLI infrastructure.
 
 use std::{collections::BTreeMap, ffi::OsString, fs};
 
 use clap::{Arg, ArgAction, ArgMatches, Command};
 use serde_json::{Value, json};
+use tower::Service;
 
 use crate::{
-    AuthStrategy, DecodedResponse, FerriskeySdk, OperationInput, SdkConfig, SdkError, Transport,
+    AuthStrategy, DecodedResponse, FerriskeySdk, OperationInput, SdkConfig, SdkError, SdkRequest,
+    Transport,
     generated::{self, GeneratedOperationDescriptor, ParameterLocation},
 };
 
@@ -47,7 +60,24 @@ pub enum OutputFormat {
     Pretty,
 }
 
+impl OutputFormat {
+    /// Parse output format from string.
+    #[must_use]
+    #[expect(clippy::should_implement_trait)]
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "pretty" => Self::Pretty,
+            _ => Self::Json,
+        }
+    }
+}
+
 /// CLI runtime configuration resolved from the command line.
+///
+/// ## Immutability
+///
+/// Once built, `CliConfig` is immutable. This prevents accidental mutation
+/// during request processing.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CliConfig {
     /// Base URL used to resolve generated request paths.
@@ -56,6 +86,16 @@ pub struct CliConfig {
     pub bearer_token: Option<String>,
     /// Output mode for structured CLI responses.
     pub output_format: OutputFormat,
+}
+
+impl CliConfig {
+    /// Convert CLI config to SDK config.
+    #[must_use]
+    pub fn to_sdk_config(&self) -> SdkConfig {
+        let auth = self.bearer_token.clone().map_or(AuthStrategy::None, AuthStrategy::Bearer);
+
+        SdkConfig::new(self.base_url.clone(), auth)
+    }
 }
 
 /// Parsed CLI invocation normalized into the shared SDK request shape.
@@ -93,20 +133,27 @@ where
 }
 
 /// Execute a parsed CLI invocation through the shared SDK runtime.
+///
+/// ## Generic Transport
+///
+/// The transport type is generic, allowing callers to provide any
+/// `tower::Service<SdkRequest>` implementation. This enables
+/// middleware composition at the call site.
 pub async fn execute_with_transport<T>(
     invocation: CliInvocation,
     transport: T,
 ) -> Result<String, CliError>
 where
-    T: Transport,
+    T: Transport + Clone,
+    <T as Service<SdkRequest>>::Future: Send,
 {
-    let auth =
-        invocation.config.bearer_token.clone().map_or(AuthStrategy::None, AuthStrategy::Bearer);
-    let sdk =
-        FerriskeySdk::new(SdkConfig::new(invocation.config.base_url.clone(), auth), transport);
+    let sdk_config = invocation.config.to_sdk_config();
+    let sdk = FerriskeySdk::new(sdk_config, transport);
+
     let operation = sdk.operation(invocation.operation_id).ok_or_else(|| {
         CliError::UnknownOperation { operation_id: invocation.operation_id.to_string() }
     })?;
+
     let decoded = operation.execute_decoded(invocation.input.clone()).await?;
 
     render_output(invocation.operation_id, &decoded, invocation.config.output_format)
@@ -192,23 +239,24 @@ fn parse_matches(matches: &ArgMatches) -> Result<CliInvocation, CliError> {
     let config = CliConfig {
         base_url: required_string(matches, "base-url")?,
         bearer_token: matches.get_one::<String>("bearer-token").cloned(),
-        output_format: match required_string(matches, "output")?.as_str() {
-            "pretty" => OutputFormat::Pretty,
-            _ => OutputFormat::Json,
-        },
+        output_format: OutputFormat::from_str(&required_string(matches, "output")?),
     };
+
     let (_, tag_matches) = matches.subcommand().ok_or_else(|| {
         clap::Error::raw(clap::error::ErrorKind::MissingSubcommand, "an API tag is required")
     })?;
+
     let (operation_name, operation_matches) = tag_matches.subcommand().ok_or_else(|| {
         clap::Error::raw(clap::error::ErrorKind::MissingSubcommand, "an operation is required")
     })?;
+
     let descriptor = generated::OPERATION_DESCRIPTORS
         .iter()
         .find(|descriptor| command_name(descriptor.operation_id) == operation_name)
         .ok_or_else(|| CliError::UnknownOperation {
             operation_id: operation_name.replace('-', "_"),
         })?;
+
     let input = parse_operation_input(descriptor, operation_matches)?;
 
     Ok(CliInvocation { config, operation_id: descriptor.operation_id, input })
@@ -275,6 +323,7 @@ fn render_output(
             Value::String(String::from_utf8_lossy(&response.raw_body).into_owned())
         }
     });
+
     let rendered = json!({
         "operation_id": operation_id,
         "schema_name": response.schema_name,

@@ -5,25 +5,32 @@ use std::{
     future::Future,
     pin::Pin,
     sync::{Arc, Mutex},
+    task::{Context, Poll},
 };
 
 use ferriskey_sdk::{
-    AuthStrategy, FerriskeySdk, OperationInput, SdkConfig,
-    client::TagClient,
-    generated,
-    transport::{SdkRequest, SdkResponse, Transport},
+    AuthStrategy, FerriskeySdk, OperationInput, SdkConfig, SdkRequest, SdkResponse,
+    TransportError, client::TagClient, generated,
 };
 use proptest::prelude::*;
+use tower::Service;
 
 #[derive(Clone, Debug, Default)]
 struct NoopTransport;
 
-impl Transport for NoopTransport {
-    fn send(
-        &self,
-        request: SdkRequest,
-    ) -> Pin<Box<dyn Future<Output = Result<SdkResponse, ferriskey_sdk::TransportError>> + Send + '_>>
-    {
+/// Implement tower::Service for NoopTransport.
+///
+/// This makes NoopTransport a valid Transport via the blanket implementation.
+impl Service<SdkRequest> for NoopTransport {
+    type Response = SdkResponse;
+    type Error = TransportError;
+    type Future = Pin<Box<dyn Future<Output = Result<SdkResponse, TransportError>> + Send>>;
+
+    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn call(&mut self, request: SdkRequest) -> Self::Future {
         Box::pin(async move {
             Ok(SdkResponse {
                 body: request.body.unwrap_or_default(),
@@ -53,12 +60,19 @@ impl RecordedTransport {
     }
 }
 
-impl Transport for RecordedTransport {
-    fn send(
-        &self,
-        request: SdkRequest,
-    ) -> Pin<Box<dyn Future<Output = Result<SdkResponse, ferriskey_sdk::TransportError>> + Send + '_>>
-    {
+/// Implement tower::Service for RecordedTransport.
+///
+/// This makes RecordedTransport a valid Transport via the blanket implementation.
+impl Service<SdkRequest> for RecordedTransport {
+    type Response = SdkResponse;
+    type Error = TransportError;
+    type Future = Pin<Box<dyn Future<Output = Result<SdkResponse, TransportError>> + Send>>;
+
+    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn call(&mut self, request: SdkRequest) -> Self::Future {
         let captured_requests = Arc::clone(&self.captured_requests);
         let response = self.response.clone();
 

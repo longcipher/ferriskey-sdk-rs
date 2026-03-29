@@ -8,15 +8,17 @@ use std::{
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
     sync::{Arc, Mutex, PoisonError},
+    task::{Context, Poll},
     time::{Duration, Instant},
 };
 
 use ferriskey_sdk::{
     AuthStrategy, DecodedResponse, FerriskeySdk, HpxTransport, OperationInput, SdkConfig,
-    SdkRequest, Transport, contract,
+    SdkRequest, SdkResponse, Transport, TransportError, contract,
     generated::{self, GeneratedOperationDescriptor, ParameterLocation},
 };
 use serde_json::{Map, Number, Value};
+use tower::Service;
 
 const PRISM_HOST: &str = "127.0.0.1";
 const PRISM_LOG_TAIL_LINES: usize = 50;
@@ -103,13 +105,20 @@ struct RequestBodyContract {
     schema: Value,
 }
 
+/// Recording transport that wraps another transport and captures requests.
+///
+/// ## Design Decision: tower::Service Implementation
+///
+/// The RecordingTransport implements `tower::Service` directly, making it
+/// a valid `Transport` via the blanket implementation. This demonstrates
+/// how easy it is to compose transport behavior using tower.
 #[derive(Clone, Debug)]
-struct RecordingTransport<T: Transport> {
+struct RecordingTransport<T: Transport + Clone> {
     captured_requests: Arc<Mutex<Vec<SdkRequest>>>,
     inner: T,
 }
 
-impl<T: Transport> RecordingTransport<T> {
+impl<T: Transport + Clone> RecordingTransport<T> {
     fn new(inner: T) -> Self {
         Self { captured_requests: Arc::new(Mutex::new(Vec::new())), inner }
     }
@@ -119,25 +128,31 @@ impl<T: Transport> RecordingTransport<T> {
     }
 }
 
-impl<T: Transport> Transport for RecordingTransport<T> {
-    fn send(
-        &self,
-        request: SdkRequest,
-    ) -> std::pin::Pin<
-        Box<
-            dyn std::future::Future<
-                    Output = Result<ferriskey_sdk::SdkResponse, ferriskey_sdk::TransportError>,
-                > + Send
-                + '_,
-        >,
-    > {
+/// Implement tower::Service for RecordingTransport.
+///
+/// This makes RecordingTransport a valid Transport via the blanket implementation.
+impl<T: Transport + Clone + 'static> Service<SdkRequest> for RecordingTransport<T>
+where
+    <T as Service<SdkRequest>>::Future: Send,
+{
+    type Response = SdkResponse;
+    type Error = TransportError;
+    type Future = std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<SdkResponse, TransportError>> + Send>,
+    >;
+
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.inner.poll_ready(cx)
+    }
+
+    fn call(&mut self, request: SdkRequest) -> Self::Future {
         let captured_requests = Arc::clone(&self.captured_requests);
         let request_snapshot = request.clone();
-        let inner = &self.inner;
+        let mut inner = self.inner.clone();
 
         Box::pin(async move {
             lock_or_recover(&captured_requests).push(request_snapshot);
-            inner.send(request).await
+            inner.call(request).await
         })
     }
 }

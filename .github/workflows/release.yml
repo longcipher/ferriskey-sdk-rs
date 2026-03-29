@@ -18,12 +18,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Rust
+      - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Rust nightly with components
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt, clippy
 
       - uses: taiki-e/install-action@v2
         with:
-          tool: just
+          tool: just,cargo-machete,taplo-cli,typos-cli,rumdl
+
+      - name: Run CI checks
+        run: just ci
 
       - name: Get version from tag
         id: tag_version

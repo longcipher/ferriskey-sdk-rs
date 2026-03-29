@@ -5,14 +5,16 @@ use std::{
     future::Future,
     pin::Pin,
     sync::{Arc, Mutex},
+    task::{Context, Poll},
 };
 
 use ferriskey_sdk::{
-    AuthStrategy, FerriskeySdk, OperationInput, SdkConfig, SdkError,
+    AuthStrategy, FerriskeySdk, OperationInput, SdkConfig, SdkError, SdkRequest, SdkResponse,
+    TransportError,
     generated::{self, GeneratedOperationDescriptor},
-    transport::{SdkRequest, SdkResponse, Transport},
 };
 use proptest::prelude::*;
+use tower::Service;
 
 #[derive(Clone, Debug)]
 struct RecordedTransport {
@@ -34,12 +36,19 @@ impl RecordedTransport {
     }
 }
 
-impl Transport for RecordedTransport {
-    fn send(
-        &self,
-        request: SdkRequest,
-    ) -> Pin<Box<dyn Future<Output = Result<SdkResponse, ferriskey_sdk::TransportError>> + Send + '_>>
-    {
+/// Implement tower::Service for RecordedTransport.
+///
+/// This makes RecordedTransport a valid Transport via the blanket implementation.
+impl Service<SdkRequest> for RecordedTransport {
+    type Response = SdkResponse;
+    type Error = TransportError;
+    type Future = Pin<Box<dyn Future<Output = Result<SdkResponse, TransportError>> + Send>>;
+
+    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn call(&mut self, request: SdkRequest) -> Self::Future {
         let captured_requests = Arc::clone(&self.captured_requests);
         let response_status = self.response_status;
         let response_body = self.response_body.clone();
