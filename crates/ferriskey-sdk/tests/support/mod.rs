@@ -192,6 +192,7 @@ pub(crate) async fn launch_prism() -> TestResult<PrismServer> {
             OpenOptions::new().create(true).truncate(true).write(true).open(&log_path)?;
         let stderr = log_file.try_clone()?;
         let child = Command::new(prism_bin())
+            .arg("@stoplight/prism-cli")
             .arg("mock")
             .arg(&normalized_contract_path)
             .arg("--host")
@@ -681,7 +682,7 @@ fn other_error(message: impl Into<String>) -> Box<dyn Error + Send + Sync> {
 }
 
 fn prism_bin() -> &'static OsStr {
-    OsStr::new("prism")
+    OsStr::new("npx")
 }
 
 fn prism_log_path(manifest_dir: &Path) -> PathBuf {
