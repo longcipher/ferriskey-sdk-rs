@@ -6,7 +6,7 @@ description = "FerrisKey command-line client"
 
 [dependencies]
 eyre.workspace = true
-ferriskey-sdk = { path = "../../crates/ferriskey-sdk" }
+ferriskey-sdk.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 
 [lints]

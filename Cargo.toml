@@ -11,7 +11,7 @@ resolver = "3"
 
 [workspace.dependencies]
 # local crates
-ferriskey-cli = { path = "crates/ferriskey-cli", version = "0.1.0" }
+ferriskey-cli = { path = "bin/ferriskey-cli", version = "0.1.0" }
 ferriskey-sdk = { path = "crates/ferriskey-sdk", version = "0.1.0" }
 
 # external crates

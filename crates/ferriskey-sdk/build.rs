@@ -18,13 +18,30 @@ fn run() -> Result<(), contract::ContractError> {
         .map(std::path::PathBuf::from)
         .map_err(contract::ContractError::Env)?;
     let source_contract_path = contract::source_contract_path(&manifest_dir);
-    let artifacts = contract::generate_artifacts(&manifest_dir)?;
-    let normalized_contract_path = contract::normalized_contract_path(&manifest_dir);
     let generated_module_path =
         std::path::PathBuf::from(env::var("OUT_DIR").map_err(contract::ContractError::Env)?)
             .join("generated_contract.rs");
 
     println!("cargo:rerun-if-changed={}", source_contract_path.display());
+
+    // When building from a published crate, the contract file may not exist.
+    // In that case, generate an empty registry.
+    if !source_contract_path.exists() {
+        let empty_registry = contract::ContractRegistry {
+            operation_count: 0,
+            operations: Vec::new(),
+            path_count: 0,
+            schema_count: 0,
+            schemas: Vec::new(),
+            tags: Vec::new(),
+        };
+        fs::write(generated_module_path, contract::render_generated_module(&empty_registry))
+            .map_err(contract::ContractError::Io)?;
+        return Ok(());
+    }
+
+    let artifacts = contract::generate_artifacts(&manifest_dir)?;
+    let normalized_contract_path = contract::normalized_contract_path(&manifest_dir);
 
     if let Some(parent) = normalized_contract_path.parent() {
         fs::create_dir_all(parent).map_err(contract::ContractError::Io)?;
