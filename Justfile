@@ -59,7 +59,12 @@ check-cn:
   rg --line-number --column "\p{Han}"
 
 # Full CI check
-ci: lint test-all build
+ci:
+  @if ! command -v npx >/dev/null 2>&1; then echo "Error: npx not found. Please install Node.js."; exit 1; fi
+  @if ! npx @stoplight/prism-cli --version >/dev/null 2>&1; then echo "Installing Prism..."; npm install --global @stoplight/prism-cli; fi
+  just lint
+  just build
+  just test-all
 
 # ============================================================
 # Maintenance & Tools

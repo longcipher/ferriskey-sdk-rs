@@ -47,8 +47,11 @@ fn run() -> Result<(), contract::ContractError> {
         fs::create_dir_all(parent).map_err(contract::ContractError::Io)?;
     }
 
-    fs::write(&normalized_contract_path, artifacts.normalized_json)
-        .map_err(contract::ContractError::Io)?;
+    // Write to a temporary file first, then rename to ensure atomic write
+    let temp_path = normalized_contract_path.with_extension("tmp");
+    fs::write(&temp_path, &artifacts.normalized_json).map_err(contract::ContractError::Io)?;
+    fs::rename(&temp_path, &normalized_contract_path).map_err(contract::ContractError::Io)?;
+
     fs::write(generated_module_path, contract::render_generated_module(&artifacts.registry))
         .map_err(contract::ContractError::Io)?;
 

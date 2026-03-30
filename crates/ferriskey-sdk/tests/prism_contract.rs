@@ -71,9 +71,7 @@ proptest! {
 
 #[tokio::test]
 async fn prism_sweep_validates_every_documented_operation() {
-    let prism = support::launch_prism()
-        .await
-        .expect("Task 3.1 Prism launcher should boot from the normalized contract");
+    let prism = support::shared_prism().await;
     let report = support::run_contract_sweep(&prism.base_url, Some("prism-sweep-token"))
         .await
         .expect("Task 3.1 contract sweep should execute every documented operation");
@@ -85,9 +83,7 @@ async fn prism_sweep_validates_every_documented_operation() {
 
 #[tokio::test]
 async fn secured_operations_apply_bearer_auth_and_decode_structured_responses() {
-    let prism = support::launch_prism()
-        .await
-        .expect("Task 3.1 Prism launcher should boot from the normalized contract");
+    let prism = support::shared_prism().await;
     let invocation = support::invoke_secured_operation(&prism.base_url, "prism-secured-token")
         .await
         .expect("Task 3.1 should exercise a secured operation through Prism");

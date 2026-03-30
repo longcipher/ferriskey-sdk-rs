@@ -17,9 +17,7 @@ fn cli_lists_tag_groups() {
 
 #[tokio::test]
 async fn cli_invokes_operation_with_arguments() {
-    let prism = support::launch_prism()
-        .await
-        .expect("Task 3.2 Prism launcher should boot before CLI smoke invocations");
+    let prism = support::shared_prism().await;
     let parity = support::invoke_cli_sdk_parity(
         &prism.base_url,
         "cli-token",
@@ -44,9 +42,7 @@ async fn cli_invokes_operation_with_arguments() {
 
 #[tokio::test]
 async fn cli_formats_pretty_output_for_auth_probe() {
-    let prism = support::launch_prism()
-        .await
-        .expect("Task 3.2 Prism launcher should boot before CLI auth probes");
+    let prism = support::shared_prism().await;
     let execution = support::invoke_cli_operation(
         &prism.base_url,
         None,

@@ -87,11 +87,7 @@ async fn inspect_generated_sdk_operation_registry(world: &mut WorkspaceWorld) {
 
 #[given("Prism is serving the normalized FerrisKey contract")]
 async fn prism_is_serving_contract(world: &mut WorkspaceWorld) {
-    world.prism_server = Some(
-        support::launch_prism()
-            .await
-            .expect("Task 3.1 Prism harness should launch from the normalized contract artifact"),
-    );
+    world.prism_server = Some(support::shared_prism().await.clone());
 }
 
 #[given("the SDK is configured with a bearer token")]
