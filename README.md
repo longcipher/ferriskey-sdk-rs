@@ -1,11 +1,11 @@
 # FerrisKey SDK Workspace
 
-[![DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/longcipher/ferriskey-sdk)
-[![Context7](https://img.shields.io/badge/Website-context7.com-blue)](https://context7.com/longcipher/ferriskey-sdk)
+[![DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/longcipher/ferriskey-sdk-rs)
+[![Context7](https://img.shields.io/badge/Website-context7.com-blue)](https://context7.com/longcipher/ferriskey-sdk-rs)
 [![crates.io](https://img.shields.io/crates/v/ferriskey-sdk.svg)](https://crates.io/crates/ferriskey-sdk)
 [![docs.rs](https://docs.rs/ferriskey-sdk/badge.svg)](https://docs.rs/ferriskey-sdk)
 
-![ferriskey-sdk](https://socialify.git.ci/longcipher/ferriskey-sdk/image?font=Source+Code+Pro&language=1&name=1&owner=1&pattern=Circuit+Board&theme=Auto)
+![ferriskey-sdk](https://socialify.git.ci/longcipher/ferriskey-sdk-rs/image?font=Source+Code+Pro&language=1&name=1&owner=1&pattern=Circuit+Board&theme=Auto)
 
 Rust workspace for the FerrisKey OpenAPI contract in [docs/openai.json](docs/openai.json). The repository ships two primary artifacts:
 
