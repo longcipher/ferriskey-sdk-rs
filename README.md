@@ -12,7 +12,7 @@ Rust workspace for the FerrisKey OpenAPI contract in [docs/openai.json](docs/ope
 - `crates/ferriskey-sdk`: the shared Rust SDK generated and validated from the FerrisKey contract
 - `bin/ferriskey-cli`: a descriptor-driven CLI that exercises the same SDK runtime path as library consumers
 
-The workspace uses `cucumber-rs` for acceptance coverage, crate-local tests for the inner TDD loop, and Stoplight Prism as the contract mock for end-to-end verification.
+The workspace uses crate-local tests for the inner TDD loop, and Stoplight Prism as the contract mock for end-to-end verification.
 
 ## What Is Here
 
@@ -36,7 +36,6 @@ just setup
 just format
 just lint
 just test
-just bdd
 just test-all
 ```
 
@@ -46,7 +45,6 @@ just test-all
 
 - `bin/ferriskey-cli`: CLI binary crate
 - `crates/ferriskey-sdk`: reusable SDK crate
-- `features/`: Gherkin acceptance scenarios executed by `cargo test -p ferriskey-sdk --test bdd`
 - `docs/openai.json`: authoritative FerrisKey OpenAPI contract
 - `target/prism/openai.prism.json`: normalized Prism-ready artifact generated from the contract
 
@@ -56,14 +54,12 @@ just test-all
 just format
 just lint
 just test
-just bdd
 just test-all
 just build
 ```
 
 - `just test` runs the crate and integration test suites, including Prism-backed smoke tests.
-- `just bdd` runs the FerrisKey acceptance scenarios from `features/`.
-- `just test-all` runs both the TDD and BDD layers together.
+- `- `just test-all` runs both the TDD and BDD layers together.
 
 ## CLI Usage
 
@@ -138,8 +134,7 @@ cargo run -p ferriskey-cli -- \
 	--realm-name test
 ```
 
-The SDK and CLI test suites start Prism automatically when needed, so the normal `just test`, `just bdd`, and `just test-all` flows already cover the contract-backed paths.
-
+The SDK and CLI test suites start Prism automatically when needed, so the normal `just test`, `
 ## Testing Model
 
 - BDD via `features/*.feature` defines the acceptance contract.

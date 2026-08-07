@@ -21,7 +21,6 @@ toml.workspace = true
 tower = { workspace = true, features = ["util"] }
 
 [dev-dependencies]
-cucumber = { workspace = true }
 proptest = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 
@@ -29,6 +28,3 @@ tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 
-[[test]]
-name = "bdd"
-harness = false

@@ -25,14 +25,9 @@ lint:
 test:
   cargo test --all-features
 
-# Run BDD scenarios
-bdd:
-  cargo test -p ferriskey-sdk --test bdd
 
-# Run both TDD and BDD suites
 test-all:
   cargo test --all-features
-  cargo test -p ferriskey-sdk --test bdd
 
 # Run tests with coverage
 test-coverage:

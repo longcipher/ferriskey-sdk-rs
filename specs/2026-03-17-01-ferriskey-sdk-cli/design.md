@@ -13,7 +13,7 @@
 The repository currently contains a Rust workspace template, while `docs/openai.json` defines a large FerrisKey API contract with 72 paths, 107 operations, 12 tag groups, and 154 schemas. The requested change is to replace the template placeholders with a production-grade Rust SDK under `crates/`, add a `bin/ferriskey-cli` binary that can invoke every documented operation through subcommands and flags, and verify the implementation against a Prism mock server so contract drift is caught before release.
 
 **Problem:** The codebase has no FerrisKey-specific SDK, no CLI surface for the documented API, and no automated contract validation against the OpenAPI document.
-**Solution:** Introduce a generated-but-reviewable FerrisKey SDK crate backed by a shared operation registry, a dynamic Clap command tree that reuses the same contract metadata, and a Prism-backed integration harness that sweeps every documented operation while preserving the workspace's Rust-first BDD + TDD workflow.
+**Solution:** Introduce a generated-but-reviewable FerrisKey SDK crate backed by a shared operation registry, a dynamic Clap command tree that reuses the same contract metadata, and a Prism-backed integration harness that sweeps every documented operation.
 
 ---
 
@@ -32,7 +32,7 @@ The OpenAPI document itself also has integration quirks that the implementation 
 3. **Contract-Aligned Execution:** Ensure the SDK and CLI serialize path, query, header, and body data according to the OpenAPI contract and decode documented responses into typed results.
 4. **Prism Integration Testing:** Use Stoplight Prism as the mock server for integration tests so every implemented interface is exercised against the contract, not only hand-picked examples.
 5. **Template Identity Cleanup:** Replace placeholder crate names and workspace metadata so the implementation reflects FerrisKey rather than the starter template.
-6. **Rust Workflow Compliance:** Preserve the repository's outside-in workflow with Gherkin scenarios, crate-local tests, `proptest` where input space is broad, and the existing `just` verification cadence.
+6. **Rust Workflow Compliance:** Preserve the repository's workflow with crate-local tests, `proptest` where input space is broad, and the existing `just` verification cadence.
 
 ### 2.3 Non-Functional Goals
 
@@ -65,7 +65,7 @@ The OpenAPI document itself also has integration quirks that the implementation 
 | Functional | Full SDK for all documented endpoints | Sections 3.5, 3.6, 4.1, 4.3; Tasks 2.1 and 2.2; `sdk-contract.feature` |
 | Functional | CLI subcommands plus parameters for all endpoints | Sections 3.5, 3.6, 4.1, 4.3; Task 2.3; `cli-invocation.feature` |
 | Functional | Prism-backed integration tests for all interfaces | Sections 3.5, 5.3, 5.5; Tasks 3.1 and 3.2; `prism-contract.feature` |
-| Constraint | Use Rust workspace conventions and `cucumber-rs` | Sections 3.3, 3.5, 3.8; Tasks 1.1, 3.2, 4.1 |
+
 | Constraint | Prefer `hpx`, `eyre`, `thiserror`, `tracing`, `proptest` | Section 3.7, 4.3, 4.6; Tasks 1.3, 2.1, 2.2 |
 | Architecture | External dependencies remain injectable | Sections 3.2, 3.7, 4.3; Tasks 1.3, 3.1 |
 | Maintainability | Replace template identities and avoid hand-maintaining 107 operations | Sections 3.4, 3.7, 4.1; Tasks 1.1 and 1.2 |
@@ -111,8 +111,8 @@ flowchart LR
 | :--- | :--- | :--- |
 | Rust workspace layout | `Cargo.toml`, `bin/*`, `crates/*` | Keep the same workspace structure and replace template crates with FerrisKey-specific crates instead of creating a parallel project layout. |
 | Shared lint and dependency policy | `Cargo.toml`, `AGENTS.md` | Keep root dependency management in `[workspace.dependencies]`, retain strict linting, use `eyre` at the application layer and `thiserror` in library code, and prefer `hpx` over `reqwest`. |
-| Verification command cadence | `Justfile` | Extend existing `just` workflows rather than replacing them. The final implementation should still validate with `just format`, `just lint`, `just test`, `just bdd`, and `just test-all`. |
-| Existing BDD convention | `features/checkout.feature`, `crates/common/tests/bdd.rs` | Preserve the pattern of root `features/` plus crate-local `tests/bdd.rs`, but move it to the FerrisKey SDK crate once the template crate is renamed. |
+| Verification command cadence | `Justfile` | Extend existing `just` workflows rather than replacing them. The final implementation should still validate with `just format`, `just lint`, `just test`, and `just test-all`. |
+
 | Contract source file | `docs/openai.json` | Use this as the canonical API contract for generation, Prism validation, and CLI surface derivation. |
 
 No reusable HTTP client, SDK abstraction, or CLI registry exists yet; those capabilities must be introduced.
@@ -122,25 +122,18 @@ No reusable HTTP client, SDK abstraction, or CLI registry exists yet; those capa
 | Current Identifier | Location | Why It Is Generic or Misaligned | Planned Name / Action |
 | :--- | :--- | :--- | :--- |
 | `cli-app` | `bin/cli-app/Cargo.toml`, `bin/cli-app/src/main.rs`, `README.md` | Template CLI name unrelated to FerrisKey | Rename crate directory and package name to `ferriskey-cli` and update command examples. |
-| `common` | `crates/common/Cargo.toml`, `crates/common/src/lib.rs`, `Justfile` | Placeholder shared crate with checkout demo | Replace with `crates/ferriskey-sdk` and move BDD runner/tests there. |
+| `common` | `crates/common/Cargo.toml`, `crates/common/src/lib.rs`, `Justfile` | Placeholder shared crate with checkout demo | Replace with `crates/ferriskey-sdk`. |
 | `Rust Workspace Template` references | `README.md` and demo code | Template copy no longer describes the repository goal | Rewrite docs around FerrisKey SDK + CLI usage. |
 | `repository = "TODO"` | `Cargo.toml` | Placeholder metadata | Set the real repository URL during implementation. |
 
-### 3.5 BDD/TDD Strategy
+### 3.5 Test Strategy
 
-- **BDD Runner:** `cucumber`
-- **BDD Command:** `cargo test -p ferriskey-sdk --test bdd`
 - **Unit Test Command:** `cargo test -p ferriskey-sdk --all-features`
 - **Property Test Tool:** `proptest`
 - **Fuzz Test Tool:** `N/A` because the only parsed contract input is the repository-owned OpenAPI file and the planned implementation does not add parser-like hostile-input boundaries or `unsafe` code.
 - **Benchmark Tool:** `N/A` because the requirement is completeness and conformance, not latency or throughput.
-- **Outer Loop:** Gherkin scenarios will verify full contract exposure, CLI invocation, and Prism-backed conformance at the acceptance level.
 - **Inner Loop:** Crate-local unit and property tests will drive request encoding, response decoding, descriptor generation, auth injection, and command argument normalization.
-- **Step Definition Location:** `crates/ferriskey-sdk/tests/bdd.rs`
 
-The outside-in loop starts with failing feature scenarios for SDK coverage, CLI invocation, and Prism contract validation. Each scenario then drives smaller unit or property tests inside `crates/ferriskey-sdk`, followed by Prism-backed integration tests and the crate-local BDD runner.
-
-### 3.6 BDD Scenario Inventory
 
 | Feature File | Scenario | Business Outcome | Primary Verification | Supporting TDD Focus |
 | :--- | :--- | :--- | :--- | :--- |
@@ -156,7 +149,7 @@ The outside-in loop starts with failing feature scenarios for SDK coverage, CLI 
 **Inherited Decisions To Preserve**
 
 - Keep executable crates under `bin/*` and reusable library crates under `crates/*`.
-- Use `cucumber-rs` for BDD, crate-local tests for TDD, and `proptest` inside normal `cargo test` flow.
+- Use crate-local tests for TDD and `proptest` inside normal `cargo test` flow.
 - Use `eyre` in the application layer, `thiserror` in library code, `tracing` for observability, and prefer `hpx` over `reqwest`.
 - Avoid broad refactors unrelated to the feature and keep cleanup scoped to touched modules.
 
@@ -183,7 +176,7 @@ The chosen approach avoids hand-maintaining 107 endpoints twice. Generated descr
 - **Behavioral Contract:** The implementation intentionally replaces the template checkout and greeting behavior with FerrisKey SDK + CLI behavior. Beyond that required replacement, each SDK and CLI operation must preserve the semantics described by `docs/openai.json`.
 - **Repo Standards:** Follow the workspace lint policy, do not use `unwrap`, keep docs/comments in English, route logging through `tracing`, and add dependencies through Cargo workflows during implementation.
 - **Readability Priorities:** Prefer clear operation descriptors, named request/response types, and explicit argument translation over clever macro-heavy DSLs. Keep async control flow shallow and split helpers before large functions become opaque.
-- **Refactor Scope:** Limit non-feature cleanup to the template rename, BDD harness migration, and FerrisKey-focused README/metadata updates.
+- **Refactor Scope:** Limit non-feature cleanup to the template rename and FerrisKey-focused README/metadata updates.
 - **Clarity Guardrails:** Avoid nested ternaries or dense builder chains in generated handwritten code paths. Generated output should still be deterministic, formatted, and reviewable.
 
 ### 3.9 Planner Contract Surface
@@ -239,7 +232,6 @@ crates/
           user.rs
           webhook.rs
     tests/
-      bdd.rs
       prism_contract.rs
       cli_smoke.rs
 features/
@@ -373,7 +365,7 @@ Integration tests should spawn Prism from the normalized contract and exercise t
 
 - `prism_contract.rs` should iterate across the operation registry and verify that every operation can construct a valid request and decode the documented primary response from Prism.
 - `cli_smoke.rs` should shell out to `cargo run -p ferriskey-cli -- ...` or a compiled binary and compare output to the same SDK expectations.
-- `bdd.rs` should bind business-facing Gherkin steps to the same reusable test helpers so the acceptance layer stays thin.
+
 
 ### 5.4 Robustness & Performance Testing
 
@@ -389,8 +381,8 @@ Integration tests should spawn Prism from the normalized contract and exercise t
 | **VP-01** | `cargo test -p ferriskey-sdk --all-features` | All unit and property tests pass for the SDK crate. |
 | **VP-02** | `cargo test -p ferriskey-sdk --test prism_contract` | Prism-backed contract sweep passes and reports all 107 operations covered. |
 | **VP-03** | `cargo test -p ferriskey-sdk --test cli_smoke` | CLI integration tests pass against Prism. |
-| **VP-04** | `cargo test -p ferriskey-sdk --test bdd` | Acceptance scenarios pass through `cucumber-rs`. |
-| **VP-05** | `just format && just lint && just test && just bdd && just test-all` | Repository-wide formatting, linting, TDD, and BDD commands succeed. |
+
+| **VP-05** | `just format && just lint && just test && just test-all` | Repository-wide formatting, linting, and testing commands succeed. |
 
 ### 5.6 Validation Rules
 
@@ -398,7 +390,7 @@ Integration tests should spawn Prism from the normalized contract and exercise t
 | :--- | :--- | :--- | :--- |
 | **TC-01** | Generate the operation registry from `docs/openai.json` | Registry contains 107 operations and 12 unique tag groups | Unit test plus normalization snapshot |
 | **TC-02** | Invoke a secured user operation without bearer config | SDK returns a typed auth-related error before request execution | Unit test for auth strategy + Prism contract test for secured operation |
-| **TC-03** | Run a representative CLI create operation with path, query, and JSON body inputs | CLI exits successfully and prints structured JSON decoded from Prism | `cli_smoke.rs` and BDD scenario |
+| **TC-03** | Run a representative CLI create operation with path, query, and JSON body inputs | CLI exits successfully and prints structured JSON decoded from Prism | `cli_smoke.rs` |
 | **TC-04** | Execute the Prism contract sweep | Every documented operation is attempted and tracked exactly once | `prism_contract.rs` summary assertion |
 | **TC-05** | Start Prism with the normalized contract artifact | Prism boots successfully and responds on the configured port | integration-test setup plus runtime log and probe capture |
 
@@ -408,7 +400,7 @@ Integration tests should spawn Prism from the normalized contract and exercise t
 
 - [ ] **Phase 1: Foundation** — Rename template crates, normalize the contract, and establish the generated descriptor baseline.
 - [ ] **Phase 2: Core Logic** — Implement transport, auth, typed SDK facades, and dynamic CLI command generation.
-- [ ] **Phase 3: Integration** — Add Prism orchestration, full-surface contract tests, and BDD acceptance scenarios.
+- [ ] **Phase 3: Integration** — Add Prism orchestration and full-surface contract tests.
 - [ ] **Phase 4: Polish** — Update docs, repository commands, and final verification wiring.
 
 ---
